@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Tienda</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0f0f0f;--bg2:#1a1a1a;--bg3:#242424;--bg4:#2e2e2e;
+    --acc:#00d4aa;--acc2:#00a884;--acc3:#007a60;
+    --warn:#f59e0b;--danger:#ef4444;--info:#3b82f6;
+    --text:#f0f0f0;--text2:#a0a0a0;--text3:#606060;
+    --border:#333;--border2:#444;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Courier New',monospace;height:100vh;overflow:hidden;user-select:none}
+  
+  /* TABS */
+  .tabs{display:flex;border-bottom:1px solid var(--border2);background:var(--bg2)}
+  .tab{padding:12px 28px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);border-bottom:3px solid transparent;transition:all .15s}
+  .tab:hover{color:var(--text);background:var(--bg3)}
+  .tab.active{color:var(--acc);border-bottom-color:var(--acc);background:var(--bg3)}
+  .tab-hint{font-size:10px;color:var(--text3);padding:14px 12px 14px 0;margin-left:auto;align-self:center}
+  
+  /* PANELS */
+  .panel{display:none;height:calc(100vh - 45px)}
+  .panel.active{display:flex}
+  
+  /* ===== PANEL JEFES ===== */
+  .jefes-sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+  .sidebar-header{padding:14px 16px;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--acc);border-bottom:1px solid var(--border);text-transform:uppercase}
+  .jefe-item{padding:14px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:all .12s;display:flex;align-items:center;gap:10px}
+  .jefe-item:hover{background:var(--bg3);color:var(--acc)}
+  .jefe-item.active{background:var(--bg3);color:var(--acc);border-left:3px solid var(--acc)}
+  .jefe-num{font-size:12px;font-weight:700;background:var(--bg4);padding:3px 7px;border-radius:4px;color:var(--acc);min-width:50px;text-align:center;border:1px solid var(--acc3)}
+  .jefe-name{font-size:12px;color:var(--text2)}
+  .jefe-item.active .jefe-name{color:var(--text)}
+  .sidebar-add-btn{margin:12px;padding:9px;border:1px dashed var(--acc3);background:transparent;color:var(--acc);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;letter-spacing:1px}
+  .sidebar-add-btn:hover{background:var(--acc3)}
+
+  /* PRODUCTOS DE JEFE */
+  .jefes-content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .content-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg2)}
+  .content-title{font-size:14px;font-weight:700;color:var(--text)}
+  .content-sub{font-size:11px;color:var(--text3)}
+  .hint-f2{font-size:11px;color:var(--text3);background:var(--bg3);padding:4px 10px;border-radius:4px;border:1px solid var(--border2)}
+  .hint-f2 kbd{color:var(--acc);font-weight:700}
+  
+  .prod-table-wrap{flex:1;overflow-y:auto;padding:16px}
+  .prod-table{width:100%;border-collapse:collapse;font-size:13px}
+  .prod-table th{text-align:left;padding:9px 12px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);font-weight:700}
+  .prod-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2);transition:background .1s}
+  .prod-table tr:hover td{background:var(--bg3);color:var(--text)}
+  .prod-table td.cod{color:var(--acc);font-weight:700;font-size:12px}
+  .prod-table td.price{color:var(--warn);font-weight:700}
+  .prod-table td.cost{color:var(--text3)}
+  .stock-ok{color:#4ade80}.stock-low{color:var(--warn)}.stock-zero{color:var(--danger)}
+  .no-select{color:var(--text3);text-align:center;padding:60px 20px;font-size:13px}
+
+  /* MODAL F2 */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--bg2);border:1px solid var(--acc3);border-radius:8px;padding:24px;width:420px;box-shadow:0 0 40px rgba(0,212,170,.1)}
+  .modal-title{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--acc);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+  .modal-title span{background:var(--acc);color:var(--bg);padding:2px 8px;border-radius:3px;font-size:11px}
+  .mfield{margin-bottom:14px}
+  .mfield label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+  .mfield input,.mfield select{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'Courier New',monospace;font-size:13px;padding:9px 12px;border-radius:4px;outline:none}
+  .mfield input:focus,.mfield select:focus{border-color:var(--acc)}
+  .mrow{display:flex;gap:10px}
+  .mrow .mfield{flex:1}
+  .mbtn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+  .mbtn{padding:9px 20px;border-radius:4px;font-family:'Courier New',monospace;font-size:12px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2)}
+  .mbtn:hover{background:var(--bg4);color:var(--text)}
+  .mbtn.primary{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+  .mbtn.primary:hover{background:var(--acc2)}
+  
+  /* ===== PANEL CAJA ===== */
+  .caja-layout{display:flex;flex-direction:column;flex:1;overflow:hidden}
+  .caja-top{flex:1;overflow-y:auto;background:var(--bg)}
+  .caja-items-header{display:grid;grid-template-columns:120px 1fr 90px 90px 100px;gap:0;padding:10px 20px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg2);font-weight:700}
+  .caja-item{display:grid;grid-template-columns:120px 1fr 90px 90px 100px;gap:0;padding:11px 20px;border-bottom:1px solid var(--border);font-size:13px;animation:slideIn .15s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+  .caja-item .icod{color:var(--acc);font-weight:700}
+  .caja-item .iname{color:var(--text)}
+  .caja-item .iqty{color:var(--warn);font-weight:700;text-align:center}
+  .caja-item .istock{color:var(--text3);text-align:center;font-size:12px}
+  .caja-item .isub{color:var(--warn);font-weight:700;text-align:right}
+  .caja-empty{padding:40px;text-align:center;color:var(--text3);font-size:13px}
+  
+  .caja-bottom{background:var(--bg2);border-top:2px solid var(--acc3);padding:0}
+  .caja-total-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--border)}
+  .total-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+  .total-value{font-size:22px;font-weight:700;color:var(--acc);font-family:'Courier New',monospace}
+  .caja-input-bar{display:flex;align-items:center;gap:12px;padding:12px 20px}
+  .caja-input-label{font-size:11px;letter-spacing:1px;color:var(--text3);white-space:nowrap}
+  .caja-input{background:var(--bg3);border:1px solid var(--border2);color:var(--acc);font-family:'Courier New',monospace;font-size:14px;font-weight:700;padding:10px 14px;border-radius:4px;outline:none;width:200px;letter-spacing:1px}
+  .caja-input:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(0,212,170,.15)}
+  .caja-status{font-size:12px;color:var(--text3);margin-left:auto}
+  .caja-status.ok{color:#4ade80}.caja-status.err{color:var(--danger)}
+
+  /* MODAL COBRO */
+  .cobro-modal{background:var(--bg2);border:1px solid var(--acc3);border-radius:8px;padding:28px;width:440px;box-shadow:0 0 50px rgba(0,212,170,.15)}
+  .cobro-title{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--acc);margin-bottom:18px}
+  .cobro-items{background:var(--bg3);border-radius:4px;padding:12px;margin-bottom:16px;max-height:180px;overflow-y:auto}
+  .cobro-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border)}
+  .cobro-row:last-child{border-bottom:none}
+  .cobro-total-line{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:10px 0;border-top:1px solid var(--acc3);color:var(--acc);margin-top:4px}
+  .cobro-nit-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+  .cobro-nit-input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:'Courier New',monospace;font-size:14px;padding:10px 14px;border-radius:4px;outline:none;margin-bottom:12px}
+  .cobro-nit-input:focus{border-color:var(--acc)}
+  .cobro-efec-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+  .cobro-efec-input{width:100%;background:var(--bg3);border:1px solid var(--warn);color:var(--warn);font-family:'Courier New',monospace;font-size:18px;font-weight:700;padding:10px 14px;border-radius:4px;outline:none;margin-bottom:12px}
+  .cobro-efec-input:focus{border-color:var(--warn);box-shadow:0 0 0 2px rgba(245,158,11,.15)}
+  .cobro-cambio{background:var(--bg3);border-radius:4px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .cobro-cambio-label{font-size:11px;letter-spacing:2px;color:var(--text3);text-transform:uppercase}
+  .cobro-cambio-val{font-size:20px;font-weight:700;color:#4ade80;font-family:'Courier New',monospace}
+  .cobro-hint{font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px}
+  .cobro-hint kbd{color:var(--acc);font-weight:700}
+  .cobro-step{display:none}.cobro-step.active{display:block}
+  .ticket-done{text-align:center;padding:10px 0}
+  .ticket-done .check{font-size:36px;color:#4ade80;margin-bottom:10px}
+  .ticket-done .vnum{font-size:11px;letter-spacing:2px;color:var(--text3)}
+
+  /* JEFE MODAL */
+  .jefe-modal{background:var(--bg2);border:1px solid var(--info);border-radius:8px;padding:24px;width:380px;box-shadow:0 0 40px rgba(59,130,246,.1)}
+  .jefe-modal .modal-title{color:var(--info)}
+  .jefe-modal .mfield input:focus{border-color:var(--info)}
+  .jefe-modal .mbtn.primary{background:var(--info);border-color:var(--info)}
+
+  scrollbar-color:var(--border2) var(--bg2);
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('jefes',this)">&#x25A6; Jefes / Productos</div>
+  <div class="tab" onclick="switchTab('caja',this)">&#x25A0; Caja</div>
+  <span class="tab-hint">F2 nuevo producto &nbsp;|&nbsp; ESC cerrar</span>
+</div>
+
+<!-- PANEL JEFES -->
+<div class="panel active" id="panel-jefes">
+  <div class="jefes-sidebar">
+    <div class="sidebar-header">&#x25B6; Jefes</div>
+    <div id="jefes-list"></div>
+    <button class="sidebar-add-btn" onclick="openJefeModal()">+ Nuevo jefe</button>
+  </div>
+  <div class="jefes-content">
+    <div class="content-header">
+      <div>
+        <div class="content-title" id="jefe-title">Selecciona un jefe</div>
+        <div class="content-sub" id="jefe-sub">Haz clic en un número de jefe</div>
+      </div>
+      <span class="hint-f2"><kbd>F2</kbd> nuevo producto</span>
+    </div>
+    <div class="prod-table-wrap">
+      <div id="prod-content">
+        <div class="no-select">&#x25C6; Selecciona un jefe en el panel izquierdo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL CAJA -->
+<div class="panel" id="panel-caja">
+  <div class="caja-layout">
+    <div class="caja-top">
+      <div class="caja-items-header">
+        <span>Código</span><span>Producto</span><span style="text-align:center">Cantidad</span><span style="text-align:center">Stock</span><span style="text-align:right">Subtotal</span>
+      </div>
+      <div id="caja-items">
+        <div class="caja-empty">&#x25A6; Ingresa el código de un producto para comenzar</div>
+      </div>
+    </div>
+    <div class="caja-bottom">
+      <div class="caja-total-bar">
+        <span class="total-label">Total</span>
+        <span class="total-value" id="caja-total">Q 0.00</span>
+      </div>
+      <div class="caja-input-bar">
+        <span class="caja-input-label">COD:</span>
+        <input class="caja-input" id="caja-cod" placeholder="Código producto..." autocomplete="off" autofocus>
+        <span class="caja-status" id="caja-status">Listo</span>
+        <button class="mbtn primary" style="margin-left:8px" onclick="openCobro()">COBRAR [ENTER]</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL F2: NUEVO PRODUCTO -->
+<div class="modal-bg" id="modal-prod">
+  <div class="modal">
+    <div class="modal-title"><span>F2</span> Nuevo Producto</div>
+    <div class="mfield">
+      <label>Jefe asignado</label>
+      <select id="mp-jefe"></select>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>Código</label><input id="mp-cod" placeholder="P010"></div>
+      <div class="mfield"><label>Nombre</label><input id="mp-nom" placeholder="Nombre del producto"></div>
+    </div>
+    <div class="mrow">
+      <div class="mfield"><label>Costo adquisición (Q)</label><input id="mp-cost" type="number" step="0.01" placeholder="0.00"></div>
+      <div class="mfield"><label>Precio de venta (Q)</label><input id="mp-venta" type="number" step="0.01" placeholder="0.00"></div>
+    </div>
+    <div class="mfield"><label>Stock inicial</label><input id="mp-stock" type="number" placeholder="0"></div>
+    <div id="mp-msg" style="font-size:12px;color:var(--danger);min-height:16px;margin-top:4px"></div>
+    <div class="mbtn-row">
+      <button class="mbtn" onclick="closeModal('modal-prod')">Cancelar [ESC]</button>
+      <button class="mbtn primary" onclick="guardarProducto()">Guardar [ENTER]</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO JEFE -->
+<div class="modal-bg" id="modal-jefe">
+  <div class="jefe-modal">
+    <div class="modal-title" style="color:var(--info)">&#x25B6; Nuevo Jefe</div>
+    <div class="mrow">
+      <div class="mfield"><label>Número jefe</label><input id="mj-num" placeholder="J004"></div>
+      <div class="mfield"><label>Nombre</label><input id="mj-nom" placeholder="Nombre"></div>
+    </div>
+    <div class="mfield"><label>Teléfono</label><input id="mj-tel" placeholder="5555-0000"></div>
+    <div id="mj-msg" style="font-size:12px;color:var(--danger);min-height:16px;margin-top:4px"></div>
+    <div class="mbtn-row">
+      <button class="mbtn" onclick="closeModal('modal-jefe')">Cancelar [ESC]</button>
+      <button class="mbtn" style="background:var(--info);color:var(--bg);border-color:var(--info)" onclick="guardarJefe()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COBRO -->
+<div class="modal-bg" id="modal-cobro">
+  <div class="cobro-modal">
+    <div class="cobro-title">&#x25A0; Cobro</div>
+
+    <!-- Step 1: NIT -->
+    <div class="cobro-step active" id="cobro-s1">
+      <div class="cobro-items" id="cobro-items-list"></div>
+      <div class="cobro-nit-label">NIT del cliente</div>
+      <input class="cobro-nit-input" id="cobro-nit" placeholder="NIT o ENTER para Consumidor Final">
+      <div class="cobro-hint">Ingresa NIT y presiona <kbd>ENTER</kbd> &nbsp;|&nbsp; Solo <kbd>ENTER</kbd> = C/F</div>
+      <div class="mbtn-row">
+        <button class="mbtn" onclick="closeModal('modal-cobro')">Cancelar [ESC]</button>
+        <button class="mbtn primary" onclick="pasarACobro()">Continuar [ENTER]</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Efectivo y cambio -->
+    <div class="cobro-step" id="cobro-s2">
+      <div class="cobro-total-line" style="margin-bottom:14px">
+        <span>TOTAL A PAGAR</span><span id="cobro-total-val">Q0.00</span>
+      </div>
+      <div class="cobro-efec-label">Efectivo recibido (Q)</div>
+      <input class="cobro-efec-input" id="cobro-efec" type="number" step="0.01" placeholder="0.00" oninput="calcCambio()">
+      <div class="cobro-cambio">
+        <span class="cobro-cambio-label">Cambio</span>
+        <span class="cobro-cambio-val" id="cobro-cambio">Q 0.00</span>
+      </div>
+      <div class="mbtn-row">
+        <button class="mbtn" onclick="volverNIT()">&#x2190; Atrás</button>
+        <button class="mbtn primary" onclick="finalizarVenta()">Finalizar venta [ENTER]</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Ticket -->
+    <div class="cobro-step" id="cobro-s3">
+      <div class="ticket-done">
+        <div class="check">&#x2713;</div>
+        <div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:6px">Venta completada</div>
+        <div class="vnum" id="cobro-vnum"></div>
+      </div>
+      <div class="cobro-items" id="cobro-ticket-detail" style="margin-bottom:14px"></div>
+      <div class="mbtn-row" style="justify-content:center">
+        <button class="mbtn primary" onclick="nuevaOperacion()">&#x25B6; Nueva venta</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== DATA ======
+let jefes = [
+  {id:1, num:'J001', nom:'Carlos Méndez', tel:'5555-1001'},
+  {id:2, num:'J002', nom:'Ana López', tel:'5555-1002'},
+  {id:3, num:'J003', nom:'Roberto García', tel:'5555-1003'}
+];
+let productos = [
+  {cod:'P001',nom:'Leche entera 1L',cost:8.5,ven:12,stock:50,jefe:1},
+  {cod:'P002',nom:'Queso fresco 500g',cost:18,ven:25,stock:30,jefe:1},
+  {cod:'P003',nom:'Yogurt fresa',cost:6,ven:9.5,stock:40,jefe:1},
+  {cod:'P004',nom:'Arroz blanco 5lb',cost:14,ven:20,stock:100,jefe:2},
+  {cod:'P005',nom:'Frijol negro 1lb',cost:5.5,ven:8,stock:80,jefe:2},
+  {cod:'P006',nom:'Aceite vegetal 1L',cost:16,ven:22,stock:60,jefe:2},
+  {cod:'P007',nom:'Jabón de baño',cost:4,ven:6.5,stock:120,jefe:3},
+  {cod:'P008',nom:'Detergente 1kg',cost:12,ven:18,stock:75,jefe:3},
+  {cod:'P009',nom:'Papel higiénico x4',cost:10,ven:15,stock:90,jefe:3}
+];
+let ventas = [];
+let noVenta = 1;
+let jefeActivo = null;
+let cajaItems = [];
+let cobroStep = 1;
+
+// ====== TABS ======
+function switchTab(t, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  btn.classList.add('active');
+  if(t==='caja') setTimeout(()=>document.getElementById('caja-cod').focus(),50);
+}
+
+// ====== JEFES ======
+function renderJefes() {
+  const list = document.getElementById('jefes-list');
+  list.innerHTML = jefes.map(j=>`
+    <div class="jefe-item${jefeActivo===j.id?' active':''}" onclick="selJefe(${j.id})">
+      <span class="jefe-num">${j.num}</span>
+      <span class="jefe-name">${j.nom}</span>
+    </div>`).join('');
+}
+
+function selJefe(id) {
+  jefeActivo = id;
+  const j = jefes.find(x=>x.id===id);
+  document.getElementById('jefe-title').textContent = j.nom;
+  document.getElementById('jefe-sub').textContent = `Jefe ${j.num} · Tel: ${j.tel}`;
+  renderJefeProds();
+  renderJefes();
+}
+
+function renderJefeProds() {
+  const prods = productos.filter(p=>p.jefe===jefeActivo);
+  const wrap = document.getElementById('prod-content');
+  if(!prods.length) {
+    wrap.innerHTML='<div class="no-select">&#x25C6; Sin productos — presiona F2 para agregar</div>';
+    return;
+  }
+  wrap.innerHTML=`<table class="prod-table">
+    <thead><tr><th>Código</th><th>Nombre</th><th>Costo Adq.</th><th>Precio Venta</th><th>Margen</th><th>Stock</th></tr></thead>
+    <tbody>${prods.map(p=>{
+      const stCls=p.stock>20?'stock-ok':p.stock>5?'stock-low':'stock-zero';
+      const margen=((p.ven-p.cost)/p.cost*100).toFixed(1);
+      return `<tr>
+        <td class="cod">${p.cod}</td>
+        <td>${p.nom}</td>
+        <td class="cost">Q${p.cost.toFixed(2)}</td>
+        <td class="price">Q${p.ven.toFixed(2)}</td>
+        <td style="color:#a78bfa;font-size:12px">${margen}%</td>
+        <td class="${stCls}">${p.stock}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+// ====== MODAL NUEVO JEFE ======
+function openJefeModal() {
+  ['mj-num','mj-nom','mj-tel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mj-msg').textContent='';
+  document.getElementById('modal-jefe').classList.add('show');
+  setTimeout(()=>document.getElementById('mj-num').focus(),50);
+}
+function guardarJefe() {
+  const num=document.getElementById('mj-num').value.trim();
+  const nom=document.getElementById('mj-nom').value.trim();
+  const tel=document.getElementById('mj-tel').value.trim();
+  if(!num||!nom){document.getElementById('mj-msg').textContent='Número y nombre son requeridos';return;}
+  if(jefes.find(j=>j.num===num)){document.getElementById('mj-msg').textContent='Ese número de jefe ya existe';return;}
+  const newId=jefes.length?Math.max(...jefes.map(j=>j.id))+1:1;
+  jefes.push({id:newId,num,nom,tel});
+  renderJefes();
+  closeModal('modal-jefe');
+}
+
+// ====== MODAL F2: NUEVO PRODUCTO ======
+function openF2Modal() {
+  const sel=document.getElementById('mp-jefe');
+  sel.innerHTML=jefes.map(j=>`<option value="${j.id}">${j.num} — ${j.nom}</option>`).join('');
+  if(jefeActivo) sel.value=jefeActivo;
+  ['mp-cod','mp-nom','mp-cost','mp-venta','mp-stock'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mp-msg').textContent='';
+  document.getElementById('modal-prod').classList.add('show');
+  setTimeout(()=>document.getElementById('mp-cod').focus(),50);
+}
+function guardarProducto() {
+  const jid=parseInt(document.getElementById('mp-jefe').value);
+  const cod=document.getElementById('mp-cod').value.trim().toUpperCase();
+  const nom=document.getElementById('mp-nom').value.trim();
+  const cost=parseFloat(document.getElementById('mp-cost').value);
+  const ven=parseFloat(document.getElementById('mp-venta').value);
+  const stock=parseInt(document.getElementById('mp-stock').value)||0;
+  if(!cod||!nom||isNaN(cost)||isNaN(ven)){document.getElementById('mp-msg').textContent='Completa código, nombre y precios';return;}
+  if(productos.find(p=>p.cod===cod)){document.getElementById('mp-msg').textContent='Ese código ya existe';return;}
+  productos.push({cod,nom,cost,ven,stock,jefe:jid});
+  if(jefeActivo===jid) renderJefeProds();
+  closeModal('modal-prod');
+}
+
+// ====== CAJA ======
+function renderCaja() {
+  const wrap=document.getElementById('caja-items');
+  if(!cajaItems.length){wrap.innerHTML='<div class="caja-empty">&#x25A6; Ingresa el código de un producto para comenzar</div>';return;}
+  wrap.innerHTML=cajaItems.map(i=>`
+    <div class="caja-item">
+      <span class="icod">${i.cod}</span>
+      <span class="iname">${i.nom}</span>
+      <span class="iqty">${i.qty}</span>
+      <span class="istock">${i.stock}</span>
+      <span class="isub">Q${(i.ven*i.qty).toFixed(2)}</span>
+    </div>`).join('');
+  const total=cajaItems.reduce((s,i)=>s+i.ven*i.qty,0);
+  document.getElementById('caja-total').textContent='Q '+total.toFixed(2);
+}
+
+function procesarCodigo(cod) {
+  cod=cod.trim().toUpperCase();
+  if(!cod) return;
+  const p=productos.find(x=>x.cod===cod);
+  const st=document.getElementById('caja-status');
+  if(!p){st.textContent='Producto no encontrado';st.className='caja-status err';setTimeout(()=>{st.textContent='Listo';st.className='caja-status';},1500);return;}
+  if(p.stock<=0){st.textContent='Sin stock';st.className='caja-status err';setTimeout(()=>{st.textContent='Listo';st.className='caja-status';},1500);return;}
+  const existing=cajaItems.find(i=>i.cod===cod);
+  if(existing){
+    if(existing.qty>=p.stock){st.textContent='Stock máximo alcanzado';st.className='caja-status err';setTimeout(()=>{st.textContent='Listo';st.className='caja-status';},1500);return;}
+    existing.qty++;
+  } else {
+    cajaItems.push({cod:p.cod,nom:p.nom,ven:p.ven,qty:1,stock:p.stock,jefe:p.jefe});
+  }
+  st.textContent=p.nom+' +1';st.className='caja-status ok';
+  setTimeout(()=>{st.textContent='Listo';st.className='caja-status';},1200);
+  renderCaja();
+}
+
+// ====== COBRO ======
+function openCobro() {
+  if(!cajaItems.length) return;
+  cobroStep=1;
+  document.querySelectorAll('.cobro-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('cobro-s1').classList.add('active');
+  const total=cajaItems.reduce((s,i)=>s+i.ven*i.qty,0);
+  document.getElementById('cobro-items-list').innerHTML=cajaItems.map(i=>`
+    <div class="cobro-row"><span>${i.cod} ${i.nom} x${i.qty}</span><span>Q${(i.ven*i.qty).toFixed(2)}</span></div>`).join('')+
+    `<div style="display:flex;justify-content:space-between;padding:6px 0 0;font-weight:700;color:var(--acc);font-size:13px"><span>TOTAL</span><span>Q${total.toFixed(2)}</span></div>`;
+  document.getElementById('cobro-nit').value='';
+  document.getElementById('modal-cobro').classList.add('show');
+  setTimeout(()=>document.getElementById('cobro-nit').focus(),50);
+}
+
+function pasarACobro() {
+  const total=cajaItems.reduce((s,i)=>s+i.ven*i.qty,0);
+  document.getElementById('cobro-total-val').textContent='Q '+total.toFixed(2);
+  document.getElementById('cobro-efec').value='';
+  document.getElementById('cobro-cambio').textContent='Q 0.00';
+  document.querySelector('#cobro-s1').classList.remove('active');
+  document.getElementById('cobro-s2').classList.add('active');
+  cobroStep=2;
+  setTimeout(()=>document.getElementById('cobro-efec').focus(),50);
+}
+
+function calcCambio() {
+  const total=cajaItems.reduce((s,i)=>s+i.ven*i.qty,0);
+  const ef=parseFloat(document.getElementById('cobro-efec').value)||0;
+  const cambio=ef-total;
+  const el=document.getElementById('cobro-cambio');
+  el.textContent='Q '+(cambio>=0?cambio.toFixed(2):'0.00');
+  el.style.color=cambio>=0?'#4ade80':'var(--danger)';
+}
+
+function finalizarVenta() {
+  const ef=parseFloat(document.getElementById('cobro-efec').value)||0;
+  const total=cajaItems.reduce((s,i)=>s+i.ven*i.qty,0);
+  if(ef<total){document.getElementById('cobro-cambio').textContent='Efectivo insuficiente';document.getElementById('cobro-cambio').style.color='var(--danger)';return;}
+  const nit=document.getElementById('cobro-nit').value.trim()||'C/F';
+  const cambio=ef-total;
+  const now=new Date();
+  const venta={no:noVenta++,fecha:now.toLocaleString('es-GT'),nit,lineas:[...cajaItems],total,ef,cambio};
+  ventas.push(venta);
+  // descontar stock
+  cajaItems.forEach(ci=>{const p=productos.find(x=>x.cod===ci.cod);if(p) p.stock-=ci.qty;});
+  // mostrar ticket
+  document.getElementById('cobro-vnum').textContent='Venta #'+venta.no+' · '+venta.fecha+' · '+nit;
+  document.getElementById('cobro-ticket-detail').innerHTML=
+    cajaItems.map(i=>`<div class="cobro-row"><span>${i.nom} x${i.qty}</span><span>Q${(i.ven*i.qty).toFixed(2)}</span></div>`).join('')+
+    `<div class="cobro-row" style="font-weight:700;color:var(--acc)"><span>Total</span><span>Q${total.toFixed(2)}</span></div>`+
+    `<div class="cobro-row"><span>Efectivo</span><span>Q${ef.toFixed(2)}</span></div>`+
+    `<div class="cobro-row" style="color:#4ade80"><span>Cambio</span><span>Q${cambio.toFixed(2)}</span></div>`;
+  document.getElementById('cobro-s2').classList.remove('active');
+  document.getElementById('cobro-s3').classList.add('active');
+  cobroStep=3;
+  cajaItems=[];
+  renderCaja();
+}
+
+function volverNIT(){
+  document.getElementById('cobro-s2').classList.remove('active');
+  document.getElementById('cobro-s1').classList.add('active');
+  cobroStep=1;
+  setTimeout(()=>document.getElementById('cobro-nit').focus(),50);
+}
+
+function nuevaOperacion(){
+  closeModal('modal-cobro');
+  document.getElementById('caja-total').textContent='Q 0.00';
+  setTimeout(()=>document.getElementById('caja-cod').focus(),100);
+}
+
+// ====== MODAL HELPERS ======
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+
+// ====== KEYBOARD ======
+document.addEventListener('keydown',e=>{
+  const anyModal=document.querySelector('.modal-bg.show');
+  
+  if(e.key==='F2'){
+    e.preventDefault();
+    if(!anyModal) openF2Modal();
+    return;
+  }
+  if(e.key==='Escape'){
+    if(anyModal) anyModal.classList.remove('show');
+    return;
+  }
+  
+  // ENTER dentro de modales
+  if(e.key==='Enter'){
+    if(document.getElementById('modal-prod').classList.contains('show')){guardarProducto();return;}
+    if(document.getElementById('modal-jefe').classList.contains('show')){guardarJefe();return;}
+    if(document.getElementById('modal-cobro').classList.contains('show')){
+      if(cobroStep===1){pasarACobro();return;}
+      if(cobroStep===2){finalizarVenta();return;}
+      if(cobroStep===3){nuevaOperacion();return;}
+    }
+    // enter en caja
+    const cajaActive=document.getElementById('panel-caja').classList.contains('active');
+    if(cajaActive&&!anyModal){
+      const inp=document.getElementById('caja-cod');
+      if(document.activeElement===inp&&inp.value.trim()){
+        procesarCodigo(inp.value);inp.value='';
+      } else if(!inp.value.trim()&&cajaItems.length){
+        openCobro();
+      }
+    }
+  }
+});
+
+// input de caja: procesar al escribir Enter
+document.getElementById('caja-cod').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const val=document.getElementById('caja-cod').value.trim();
+    if(val){procesarCodigo(val);document.getElementById('caja-cod').value='';}
+    else if(cajaItems.length) openCobro();
+  }
+});
+
+// NIT enter -> paso 2
+document.getElementById('cobro-nit').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();pasarACobro();}});
+document.getElementById('cobro-efec').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finalizarVenta();}});
+
+// ====== INIT ======
+renderJefes();
+</script>
+</body>
+</html>
